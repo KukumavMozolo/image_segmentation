@@ -21,7 +21,6 @@ import imutils
 epochs = 50
 patience = 60
 lambda_ = 0.0005
-beta = 0.0
 
 # data
 path_prefix = "images/"
@@ -57,23 +56,23 @@ def correlation_coefficient_loss(y_true, y_pred):
     y_true_squeezed = tf.squeeze(y_true)
     y_true_mean1 = tf.reduce_mean(y_true_squeezed, axis=1)
     y_true_centered1 = tf.transpose(tf.subtract(tf.transpose(y_true_squeezed), tf.transpose(y_true_mean1)))
-    cov1_true = tf.abs(tf.matmul(y_true_centered1, y_true_centered1, transpose_b=True)) - beta
+    cov1_true = tf.abs(tf.matmul(y_true_centered1, y_true_centered1, transpose_b=True))
 
     y_true_mean2 = tf.reduce_mean(y_true_squeezed, axis=2)
     y_pred_centered2 = tf.transpose(tf.subtract(tf.transpose(y_true_squeezed, [1, 2, 0]), tf.transpose(y_true_mean2)),
                                     [1, 2, 0])
-    cov2_true = tf.abs(tf.matmul(y_pred_centered2, y_pred_centered2, transpose_a=True)) - beta
+    cov2_true = tf.abs(tf.matmul(y_pred_centered2, y_pred_centered2, transpose_a=True))
     cov_mean_true = K.mean(K.mean(cov1_true)) + K.mean(K.mean(cov2_true))
 
     y_pred_squeezed = tf.squeeze(y_pred)
     y_pred_mean1 = tf.reduce_mean(y_pred_squeezed, axis=1)
     y_pred_centered1 = tf.transpose(tf.subtract(tf.transpose(y_pred_squeezed), tf.transpose(y_pred_mean1)))
-    cov1 = tf.abs(tf.matmul(y_pred_centered1, y_pred_centered1, transpose_b=True)) - beta
+    cov1 = tf.abs(tf.matmul(y_pred_centered1, y_pred_centered1, transpose_b=True))
 
     y_pred_mean2 = tf.reduce_mean(y_pred_squeezed, axis=2)
     y_pred_centered2 = tf.transpose(tf.subtract(tf.transpose(y_pred_squeezed, [1, 2, 0]), tf.transpose(y_pred_mean2)),
                                     [1, 2, 0])
-    cov2 = tf.abs(tf.matmul(y_pred_centered2, y_pred_centered2, transpose_a=True)) - beta
+    cov2 = tf.abs(tf.matmul(y_pred_centered2, y_pred_centered2, transpose_a=True))
     cov_mean = K.mean(K.mean(cov1)) + K.mean(K.mean(cov2))
     return K.binary_crossentropy(y_true, y_pred) + lambda_ * tf.sqrt(tf.square(cov_mean_true / cov_mean - 1))
 
@@ -310,7 +309,7 @@ def predict(path: str, storage_path: str):
     del model
 
     for idx, i in enumerate(y_pred):
-        misc.imsave(storage_path + "_" + str(idx), i)
+        misc.imsave(storage_path + "_" + str(idx)+".png", i.reshape((256,256)))
 
     fig, ax = plt.subplots(1, 1, figsize=(40, 40))
     for idx, im in enumerate(prediction_data):
@@ -322,9 +321,9 @@ def predict(path: str, storage_path: str):
     plt.show()
 
 
-for i in range(8):
+for i in range(1):
     validate_generator(
         "correlation_coefficient_loss_{}_epochs".format(str(epochs)) + "_{}_lambda".format(
             str(lambda_) + "_{} trial").format(str(i)))
-#     # predict(NEW_MODEL_PATH)
-#     # predict(BEST_MODEL_PATH)
+    predict(NEW_MODEL_PATH, "model/prediction_images/last/trial_" +str(i))
+    predict(BEST_MODEL_PATH, "model/prediction_images/best/trial_" +str(i))
